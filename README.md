@@ -1,4 +1,4 @@
-# nike.sh — just do it
+# nike.sh — just do it (agent loop)
 
 A Linear-driven, parallel, AFK (away-from-keyboard) coding loop in ~350 lines of bash.
 
@@ -77,14 +77,14 @@ frontier. Re-query and repeat until the frontier is empty or a usage limit fires
 
 **On the host:**
 
-| Dependency | Why |
-|---|---|
-| `bash` (macOS 3.2 is fine) | the loop itself |
-| `git` | worktrees, branches, merging |
-| `docker` | agent containers (Docker Desktop on macOS works; plain `docker run`, **not** `docker sandbox`) |
-| `jq`, `curl` | Linear GraphQL API |
-| `gh` (only for `--pr` mode) | opening pull requests |
-| the `nike-agent` image | built from this repo's `Dockerfile` |
+| Dependency                  | Why                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------------------- |
+| `bash` (macOS 3.2 is fine)  | the loop itself                                                                                |
+| `git`                       | worktrees, branches, merging                                                                   |
+| `docker`                    | agent containers (Docker Desktop on macOS works; plain `docker run`, **not** `docker sandbox`) |
+| `jq`, `curl`                | Linear GraphQL API                                                                             |
+| `gh` (only for `--pr` mode) | opening pull requests                                                                          |
+| the `nike-agent` image      | built from this repo's `Dockerfile`                                                            |
 
 **In `.env` next to `nike.sh`** (gitignored):
 
@@ -159,13 +159,13 @@ nike.sh --image my-agent     # alternative agent image (default nike-agent)
 nike.sh -h                   # help
 ```
 
-| Flag | Default | Meaning |
-|---|---|---|
-| `--merge` | ✔ (default) | after each wave, `git merge --no-ff` each successful branch into the base branch |
-| `--pr` | | push each successful branch and `gh pr create` against the base branch; issue → In Review |
-| `--max N` | `2` | max parallel agents per wave (also your cost throttle) |
-| `--max-turns N` | `50` | `claude --max-turns` per agent (bounds a runaway agent) |
-| `--image NAME` | `nike-agent` | docker image to run agents in |
+| Flag            | Default      | Meaning                                                                                   |
+| --------------- | ------------ | ----------------------------------------------------------------------------------------- |
+| `--merge`       | ✔ (default)  | after each wave, `git merge --no-ff` each successful branch into the base branch          |
+| `--pr`          |              | push each successful branch and `gh pr create` against the base branch; issue → In Review |
+| `--max N`       | `2`          | max parallel agents per wave (also your cost throttle)                                    |
+| `--max-turns N` | `50`         | `claude --max-turns` per agent (bounds a runaway agent)                                   |
+| `--image NAME`  | `nike-agent` | docker image to run agents in                                                             |
 
 The loop exits `0` when the frontier is empty (or a usage limit stopped it gracefully).
 It's safe to just run it again at any time: all state lives in Linear and git, not in the
@@ -198,16 +198,16 @@ nike: done — 2 issue(s) landed across 2 wave(s)
 
 ## The Linear contract
 
-Linear is the single source of truth for *what* to work on; the loop is the only thing
+Linear is the single source of truth for _what_ to work on; the loop is the only thing
 that writes to Linear. Agents never see the Linear API key — the loop relays each agent's
 final summary as an issue comment.
 
 **The frontier rule** — an issue is eligible when ALL of:
 
-1. state is **Todo** (state type `unstarted` — note: Backlog does *not* qualify),
+1. state is **Todo** (state type `unstarted` — note: Backlog does _not_ qualify),
 2. it has the **`Ready for Agent`** label,
 3. it is **unassigned**,
-4. every issue that *blocks* it (checked via `inverseRelations`, Linear's incoming
+4. every issue that _blocks_ it (checked via `inverseRelations`, Linear's incoming
    "blocks" edges) is completed or canceled.
 
 Selection is deterministic: sort eligible issues by priority (Urgent → Low; "no priority"
@@ -218,20 +218,20 @@ blocking edge when you write the tickets.
 
 **State transitions the loop performs:**
 
-| Event | Linear effect |
-|---|---|
-| picked from frontier | assign to owner + **In Progress** |
-| agent DONE + commits, merge clean | summary comment + **Done** |
-| agent DONE + commits, `--pr` mode | summary comment + PR link comment + **In Review** |
-| merge conflict | conflict comment (names kept branch/worktree) + **In Review** |
-| agent BLOCKED / no promise / no result / DONE-without-commits | reason comment + back to **Todo**, unassigned |
-| usage limit hit | comment + back to **Todo**, unassigned; loop stops |
+| Event                                                         | Linear effect                                                 |
+| ------------------------------------------------------------- | ------------------------------------------------------------- |
+| picked from frontier                                          | assign to owner + **In Progress**                             |
+| agent DONE + commits, merge clean                             | summary comment + **Done**                                    |
+| agent DONE + commits, `--pr` mode                             | summary comment + PR link comment + **In Review**             |
+| merge conflict                                                | conflict comment (names kept branch/worktree) + **In Review** |
+| agent BLOCKED / no promise / no result / DONE-without-commits | reason comment + back to **Todo**, unassigned                 |
+| usage limit hit                                               | comment + back to **Todo**, unassigned; loop stops            |
 
 Issues returned to Todo re-enter the frontier automatically — but not within the same run
 (see the ping-pong trap under [Failure modes](#failure-modes-and-recovery)).
 
 **Writing good agent tickets.** The issue description (plus all its comments) is rendered
-into the agent's prompt verbatim, and it's *all* the agent knows about the task. What works
+into the agent's prompt verbatim, and it's _all_ the agent knows about the task. What works
 well: name the exact files/modules in scope, enumerate the cases to cover, state
 constraints explicitly ("pure unit tests — no database, no network", "put tests in a NEW
 file X, do NOT touch existing tests"), and keep one issue = one coherent change. The agent
@@ -249,8 +249,8 @@ Each wave has four phases, with deliberate sequential/parallel boundaries:
    found. Candidates with a leftover worktree or branch on the host are skipped with a
    warning (they need a human — see failure table).
 
-2. **Set up** (sequential, per issue): claim it (assign + In Progress, then *verify the
-   assignment stuck* — Linear claims aren't atomic), fetch and render the full issue
+2. **Set up** (sequential, per issue): claim it (assign + In Progress, then _verify the
+   assignment stuck_ — Linear claims aren't atomic), fetch and render the full issue
    (description + comments) to markdown, `git worktree add -b agent/<ID> ../.nike/<repo>/<ID>`,
    and render `prompt.md` with the issue, recent commits, and branch name substituted in.
    Setup is sequential on purpose: it avoids intra-run claim races and concurrent
@@ -300,7 +300,7 @@ Key points:
 - The container's own `~/.claude` is throwaway session scratch owned by the `node` user.
 
 **A note about your local machine.** The `$HOME/.claude/skills` mount is resolved from
-*whoever runs the script*, not a path baked into the repo. Anyone who clones this and runs
+_whoever runs the script_, not a path baked into the repo. Anyone who clones this and runs
 `nike.sh` mounts their own local skills directory into the container — read-only, never
 committed anywhere — but if your `~/.claude/skills` contains anything you consider private,
 know that it's exposed to the agent at runtime. Nothing else about your machine (username,
@@ -311,11 +311,11 @@ runtime from `$SCRIPT_DIR`, `$REPO_DIR`, and `$HOME`.
 
 `prompt.md` is the entire agent briefing. The loop substitutes three placeholders:
 
-| Placeholder | Content |
-|---|---|
-| `{{ISSUE}}` | the rendered Linear issue: title, labels, description, all comments |
-| `{{COMMITS}}` | `git log --oneline -10` of the base branch, for context |
-| `{{BRANCH}}` | the agent's branch name (it must never switch or push) |
+| Placeholder   | Content                                                             |
+| ------------- | ------------------------------------------------------------------- |
+| `{{ISSUE}}`   | the rendered Linear issue: title, labels, description, all comments |
+| `{{COMMITS}}` | `git log --oneline -10` of the base branch, for context             |
+| `{{BRANCH}}`  | the agent's branch name (it must never switch or push)              |
 
 The prompt tells the agent to use the `/implement` skill (test-first development,
 typecheck/test loops, self-review, commit), with a manual TDD fallback if the skill is
@@ -362,22 +362,22 @@ Design stance: the loop **never retries silently and never destroys evidence**. 
 are commented onto the issue, the issue returns to the frontier, and anything with commits
 in it is kept on disk.
 
-| Failure | Loop behavior | Your recovery |
-|---|---|---|
-| Agent ends `BLOCKED: <reason>` | comment + back to Todo; **worktree/branch kept** | read the reason, fix the ticket or environment, clean up the worktree, rerun |
-| Agent ends with no promise (ran out of turns, crashed mid-thought) | comment (with result subtype) + back to Todo; worktree kept only if it has commits | check the `.jsonl` log; maybe raise `--max-turns` |
-| Agent claims DONE but committed nothing | treated as failure: comment + back to Todo, worktree removed | usually a ticket-clarity problem |
-| No `result` event at all (container died, CLI crashed) | comment with stderr excerpt + back to Todo | read `logs/<ID>.stderr.log` |
-| Merge conflict on landing | issue → In Review, branch + worktree kept, comment names them | resolve by hand in the kept worktree, merge, mark Done, delete branch |
-| Claude usage limit hit | detecting agent's issue → back to Todo untouched; a sentinel stops the loop **after** the current wave settles and its survivors land | rerun after the limit resets |
-| Leftover worktree/branch from a past failure | issue is **skipped at selection** with a host-side warning (no Linear spam) | `git worktree remove <path>` + `git branch -D agent/<ID>`, then rerun |
-| Claim doesn't stick (concurrent writer) | logged, issue skipped this run | none needed |
+| Failure                                                            | Loop behavior                                                                                                                         | Your recovery                                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Agent ends `BLOCKED: <reason>`                                     | comment + back to Todo; **worktree/branch kept**                                                                                      | read the reason, fix the ticket or environment, clean up the worktree, rerun |
+| Agent ends with no promise (ran out of turns, crashed mid-thought) | comment (with result subtype) + back to Todo; worktree kept only if it has commits                                                    | check the `.jsonl` log; maybe raise `--max-turns`                            |
+| Agent claims DONE but committed nothing                            | treated as failure: comment + back to Todo, worktree removed                                                                          | usually a ticket-clarity problem                                             |
+| No `result` event at all (container died, CLI crashed)             | comment with stderr excerpt + back to Todo                                                                                            | read `logs/<ID>.stderr.log`                                                  |
+| Merge conflict on landing                                          | issue → In Review, branch + worktree kept, comment names them                                                                         | resolve by hand in the kept worktree, merge, mark Done, delete branch        |
+| Claude usage limit hit                                             | detecting agent's issue → back to Todo untouched; a sentinel stops the loop **after** the current wave settles and its survivors land | rerun after the limit resets                                                 |
+| Leftover worktree/branch from a past failure                       | issue is **skipped at selection** with a host-side warning (no Linear spam)                                                           | `git worktree remove <path>` + `git branch -D agent/<ID>`, then rerun        |
+| Claim doesn't stick (concurrent writer)                            | logged, issue skipped this run                                                                                                        | none needed                                                                  |
 
 **The ping-pong trap (why the ATTEMPTED set exists).** A BLOCKED issue goes back to Todo
 with its worktree kept for inspection. A naive loop would immediately re-pick it on the
 next wave, hit the leftover-worktree guard, fail, return it to Todo… forever. So the loop
 keeps a per-run `ATTEMPTED` set: every issue that was picked — or skipped as a leftover —
-is excluded from all later frontier queries *in this run*. The set is deliberately not
+is excluded from all later frontier queries _in this run_. The set is deliberately not
 persisted: a fresh invocation retries everything, which is the retry policy (one attempt
 per issue per run, unbounded across runs, human in the loop in between).
 
@@ -393,14 +393,14 @@ subscription auth:
 3. **Concurrency cap** (`--max`, default 2) and **per-agent turn budget** (`--max-turns`,
    default 50).
 
-Worst AFK outcome by construction: *"the loop stopped and issues are waiting"* — never a
+Worst AFK outcome by construction: _"the loop stopped and issues are waiting"_ — never a
 surprise bill.
 
 Security posture:
 
 - The **agent never sees the Linear key**; the loop performs all Linear writes and relays
   the agent's summary.
-- The agent *does* see `CLAUDE_CODE_OAUTH_TOKEN` (any credential a process can use, it can
+- The agent _does_ see `CLAUDE_CODE_OAUTH_TOKEN` (any credential a process can use, it can
   read). Bounded risk: the token only spends the Claude subscription and is revocable.
   The realistic threat is prompt injection via issue content — mitigated here because the
   issue author is you. **If you ever point this at a tracker with untrusted ticket
@@ -496,7 +496,7 @@ resolving that conflict. The seam is the conflict branch of `land_issue()`. Keep
 deterministic path as the fallback.
 
 **Smarter retry policy.** Today: one attempt per issue per run (the `ATTEMPTED` set),
-unbounded retries across runs. If issues start ping-ponging *across* runs, persist an
+unbounded retries across runs. If issues start ping-ponging _across_ runs, persist an
 attempt counter — an `agent-attempts:<n>` label on the issue, or a counter comment — and
 have the frontier query (or a post-filter) skip issues past a threshold, flagging them for
 a human instead.
@@ -525,12 +525,12 @@ dependencies are the worktree and the two mounts.
 
 **What NOT to change lightly:**
 
-- *Selection stays deterministic.* No runtime planner re-deriving the dependency graph
+- _Selection stays deterministic._ No runtime planner re-deriving the dependency graph
   per wave — the Linear blocking graph is the authority, and it's human-reviewable in
   Linear's UI. This was decided deliberately against sandcastle's model (JFV-26).
-- *The loop owns all Linear writes.* Handing agents the Linear key breaks both the
+- _The loop owns all Linear writes._ Handing agents the Linear key breaks both the
   security model and the single-writer simplicity.
-- *Only branches with commits land; one failed agent never cancels the wave.* These two
+- _Only branches with commits land; one failed agent never cancels the wave._ These two
   invariants are what make the loop safe to leave alone.
 
 ## Development gotchas
@@ -565,16 +565,16 @@ The full decision record lives in Linear: the wayfinder map
 JFV-22 indexes everything, and each
 resolved sub-issue carries its complete rationale in a resolution comment. Highlights:
 
-| Ticket | What it settled |
-|---|---|
-| JFV-24 | Tested GraphQL snippets for frontier/claim/comment/state-moves; rate limits are a non-issue at loop scale |
-| JFV-23 | Why `docker sandbox` was rejected (host worktrees don't resolve; auth/skills friction) |
-| JFV-25 | Worktree/branch/merge mechanics, auth via `setup-token`, the cost-guardrail stack |
-| JFV-26 | The agent prompt + promise contract; no runtime planner — Linear graph is the authority |
-| JFV-35 / JFV-34 | Credentials + guardrails checklist; the `nike-agent` image, verified end-to-end |
-| JFV-27 | Tracer: one issue through the whole pipeline (toy JFV-36) |
-| JFV-28 | Parallel waves, verified with a live 2-agent wave (JFV-37/38); ping-pong fix; output surfacing |
-| JFV-30 | Cloud execution research (E2B recommendation) — kept as reference, out of scope |
+| Ticket          | What it settled                                                                                           |
+| --------------- | --------------------------------------------------------------------------------------------------------- |
+| JFV-24          | Tested GraphQL snippets for frontier/claim/comment/state-moves; rate limits are a non-issue at loop scale |
+| JFV-23          | Why `docker sandbox` was rejected (host worktrees don't resolve; auth/skills friction)                    |
+| JFV-25          | Worktree/branch/merge mechanics, auth via `setup-token`, the cost-guardrail stack                         |
+| JFV-26          | The agent prompt + promise contract; no runtime planner — Linear graph is the authority                   |
+| JFV-35 / JFV-34 | Credentials + guardrails checklist; the `nike-agent` image, verified end-to-end                           |
+| JFV-27          | Tracer: one issue through the whole pipeline (toy JFV-36)                                                 |
+| JFV-28          | Parallel waves, verified with a live 2-agent wave (JFV-37/38); ping-pong fix; output surfacing            |
+| JFV-30          | Cloud execution research (E2B recommendation) — kept as reference, out of scope                           |
 
 External references:
 
