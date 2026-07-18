@@ -1,4 +1,4 @@
-# nike.sh agent container (JFV-34)
+# nike.sh agent container
 # Runs one Claude Code agent against a host git worktree mounted at its
 # original absolute path (plus the parent repo's .git, so the worktree's
 # gitdir pointer resolves). Auth via -e CLAUDE_CODE_OAUTH_TOKEN.
@@ -10,7 +10,7 @@ RUN apt-get update \
 
 RUN npm install -g @anthropic-ai/claude-code
 
-# giftwiz is a Python/uv workspace (requires-python >=3.12)
+# target repo is a Python/uv workspace (requires-python >=3.12)
 RUN curl -LsSf https://astral.sh/uv/install.sh \
     | env UV_INSTALL_DIR=/usr/local/bin UV_NO_MODIFY_PATH=1 sh
 
