@@ -1,4 +1,4 @@
-# nike.sh — just do it (agent loop)
+# nike.sh (agent loop)
 
 A Linear-driven, parallel, AFK (away-from-keyboard) coding loop in ~350 lines of bash.
 
